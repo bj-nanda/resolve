@@ -1,6 +1,6 @@
 # Resolve — Agentic Dispute Intelligence (Living POC)
 
-**Live demo:** https://YOUR-USERNAME.github.io/resolve/ · **White paper:** [`whitepaper.pdf`](whitepaper.pdf)
+**Live demo:** https://bj-nanda.github.io/resolve/ · **White paper:** [`whitepaper.pdf`](whitepaper.pdf)
 
 Resolve is a product prototype exploring how an agentic AI layer could fix the highest-volume
 customer pain at a major card issuer: dispute and investigation resolution. It is built entirely
