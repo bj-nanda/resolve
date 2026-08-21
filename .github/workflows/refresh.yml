@@ -1,0 +1,48 @@
+name: Refresh Resolve with latest CFPB data
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pandas scikit-learn anthropic
+
+      - name: Fetch latest complaints from CFPB API
+        run: python scripts/fetch_data.py
+
+      - name: Run ML pipeline
+        run: |
+          python scripts/triage.py
+          python scripts/sentinel.py
+          python scripts/copilot.py
+
+      - name: LLM copilot refresh (optional)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then python scripts/llm_copilot.py; else echo "No API key secret - keeping template copilot output"; fi
+
+      - name: Rebuild dashboard
+        run: python scripts/build_demo.py
+
+      - name: Commit refreshed site
+        run: |
+          git config user.name "resolve-refresh-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Nightly data refresh from CFPB API"
+          git push
