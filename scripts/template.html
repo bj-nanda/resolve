@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resolve — Working Prototype</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --seq100:#cde2fb; --seq250:#86b6ef; --seq400:#3987e5; --seq550:#1c5cab; --seq700:#0d366b;
+  --good:#0ca30c; --crit:#d03b3b; --goodtext:#006300;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --goodtext:#0ca30c;
+  }
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:20px 16px 60px}
+.wrap{max-width:1060px;margin:0 auto}
+header h1{font-size:22px;font-weight:700}
+header .sub{color:var(--ink2);margin-top:2px;font-size:14px}
+.badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2);border:1px solid var(--ring);border-radius:99px;padding:2px 10px;margin-bottom:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:18px 0}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:14px 16px}
+.tile .v{font-size:26px;font-weight:700}
+.tile .l{color:var(--ink2);font-size:12.5px;margin-top:2px}
+.tile .d{font-size:12px;margin-top:2px}
+.up{color:var(--goodtext)} .down{color:var(--crit)}
+nav{display:flex;gap:6px;margin:6px 0 16px;flex-wrap:wrap}
+nav button{font:inherit;font-size:14px;font-weight:600;padding:7px 16px;border-radius:99px;border:1px solid var(--ring);background:var(--surface);color:var(--ink2);cursor:pointer}
+nav button.on{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:18px;margin-bottom:14px}
+.card h2{font-size:16px;margin-bottom:2px}
+.card .note{color:var(--ink2);font-size:13px;margin-bottom:12px}
+.alert{display:flex;gap:10px;align-items:flex-start;border-left:3px solid var(--crit);padding:10px 14px;background:color-mix(in srgb,var(--crit) 6%,var(--surface));border-radius:8px;margin-bottom:14px;font-size:13.5px}
+.alert b{color:var(--crit)}
+svg text{font-family:inherit}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.theme{border:1px solid var(--ring);border-radius:10px;padding:12px 14px;font-size:13px}
+.theme b{font-size:13.5px}
+.theme .terms{color:var(--ink2);margin:4px 0}
+.theme .n{color:var(--muted);font-size:12px}
+details{margin-top:10px;font-size:13px;color:var(--ink2)}
+summary{cursor:pointer;font-weight:600;color:var(--ink2)}
+table{border-collapse:collapse;width:100%;margin-top:8px;font-size:12.5px}
+th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+th{color:var(--ink2);font-weight:600}
+.chip{display:inline-block;border:1px solid var(--ring);background:var(--page);border-radius:99px;padding:2px 10px;font-size:12.5px;margin:2px 4px 2px 0}
+.cite{background:color-mix(in srgb,var(--s1) 12%,var(--surface));border-color:color-mix(in srgb,var(--s1) 40%,var(--ring));font-weight:600}
+.narr{background:var(--page);border:1px solid var(--ring);border-radius:8px;padding:12px;font-size:13.5px;color:var(--ink2);white-space:pre-wrap}
+.letter{border:1px solid var(--ring);border-radius:8px;padding:14px;font-size:13.5px;line-height:1.65}
+.vok{color:var(--goodtext);font-weight:600;font-size:13px}
+.vbad{color:var(--crit);font-weight:600;font-size:13px}
+.stepper{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.stepper button{font:inherit;font-size:12.5px;padding:5px 12px;border-radius:8px;border:1px solid var(--ring);background:var(--page);color:var(--ink2);cursor:pointer}
+.stepper button.on{background:var(--s1);border-color:var(--s1);color:#fff}
+.exam{border:1px solid var(--ring);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px}
+.lane{font-weight:700}
+.confbar{height:4px;border-radius:2px;background:var(--grid);margin-top:8px;overflow:hidden}
+.confbar i{display:block;height:100%;background:var(--s1)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);font-size:12px;padding:6px 10px;border-radius:8px;opacity:0;transition:opacity .1s;z-index:9;max-width:260px}
+.arch{font-size:13px;color:var(--ink2);border-top:1px solid var(--grid);margin-top:14px;padding-top:10px}
+.sr{position:absolute;left:-9999px}
+footer{color:var(--muted);font-size:12px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="badge">Working prototype · built on public CFPB data</div>
+  <h1>Resolve — Dispute Intelligence for Capital One</h1>
+  <div class="sub">Three agents over the dispute lifecycle, demonstrated on 21,192 real Capital One complaint narratives (Jan 2025 – Jun 2026). Concept &amp; build: Bharathwaj Nandagopal.</div>
+</header>
+
+<div class="tiles" id="tiles"></div>
+
+<nav id="nav">
+  <button data-t="sentinel" class="on">Sentinel — early warning</button>
+  <button data-t="triage">Triage — lane routing</button>
+  <button data-t="copilot">Investigator Copilot</button>
+</nav>
+
+<section id="sentinel">
+  <div class="alert" id="spikeAlert"></div>
+  <div class="card">
+    <h2>Complaint-theme share over time</h2>
+    <div class="note">Each narrative assigned to its dominant root-cause theme (NMF topic model, k=12). Lines show each theme's share of monthly complaint volume — share, not raw count, to be robust to CFPB publication lag. Highlighted: the active spike and two strategically notable themes.</div>
+    <div id="trendChart"></div>
+    <div class="legend" id="trendLegend"></div>
+    <details><summary>Table view</summary><div id="trendTable"></div></details>
+  </div>
+  <div class="card">
+    <h2>Root-cause themes discovered</h2>
+    <div class="note">Unsupervised — no labels were given. The model independently rediscovered known issues (360 Savings rate practices) and surfaced operational defects from text alone.</div>
+    <div class="grid2" id="themeCards"></div>
+  </div>
+</section>
+
+<section id="triage" hidden>
+  <div class="card">
+    <h2>Regulatory-lane triage classifier</h2>
+    <div class="note">TF-IDF + logistic regression routing each narrative to its regulatory lane (labels derived from the CFPB issue taxonomy; 80/20 stratified split; n=4,239 held-out). Production design: auto-route above the confidence threshold, human review queue below it.</div>
+    <div class="tiles" id="triageTiles" style="margin:0 0 14px"></div>
+    <div class="grid2">
+      <div>
+        <h2 style="font-size:14px">F1 by lane</h2>
+        <div id="f1Chart"></div>
+      </div>
+      <div>
+        <h2 style="font-size:14px">Confusion matrix (held-out)</h2>
+        <div id="cmChart"></div>
+      </div>
+    </div>
+    <details><summary>Table view</summary><div id="triageTable"></div></details>
+    <div class="arch" id="routing"></div>
+  </div>
+  <div class="card">
+    <h2>Live routing examples</h2>
+    <div class="note">Real held-out narratives and the lane the model assigned.</div>
+    <div id="triageExamples"></div>
+  </div>
+</section>
+
+<section id="copilot" hidden>
+  <div class="card">
+    <h2>Investigator Copilot — case walkthrough</h2>
+    <div class="note">Real dispute narratives run through the pipeline: case file → evidence inventory (extraction) → drafted response letter → deterministic citation validator. Every citation <span class="chip cite">[E#]</span> must resolve to an item in the inventory, or the draft is blocked.</div>
+    <div class="stepper" id="caseBtns"></div>
+    <div id="caseView"></div>
+    <div class="arch"><b>Production architecture:</b> the extraction and drafting layers shown here as deterministic templates are LLM calls in production (open-weight models in-house, per Capital One's platform strategy). The citation validator stays deterministic by design — zero-tolerance gates get engineering guarantees, not better model averages. A human investigator approves every output; nothing auto-sends.</div>
+  </div>
+  <div class="card">
+    <h2>The gate in action — corrupted draft</h2>
+    <div class="note">The same letter with one fabricated citation injected. The validator blocks it before any human sees it.</div>
+    <div id="badCase"></div>
+  </div>
+</section>
+
+<footer>Data: CFPB Consumer Complaint Database (public), Capital One complaints with narratives, refreshed automatically — last build <span id="built"></span>. Models: scikit-learn (TF-IDF + LogisticRegression; NMF). All narratives are real; redactions (XXXX) are CFPB's. Prototype by BJ Nandagopal — not affiliated with Capital One.</footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = __DATA__;
+document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('built'); if(b) b.textContent = DATA.built || '2026-08-17';});
+const $ = s => document.querySelector(s);
+const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ---------- tabs ---------- */
+$('#nav').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  ['sentinel','triage','copilot'].forEach(id=>$('#'+id).hidden = id!==b.dataset.t);
+});
+
+/* ---------- header tiles ---------- */
+const spike = DATA.sentinel.spikes[0];
+const spikeTheme = DATA.sentinel.themes.find(t=>t.id===spike.id);
+$('#tiles').innerHTML = `
+  <div class="tile"><div class="v">21,192</div><div class="l">real complaint narratives analyzed</div></div>
+  <div class="tile"><div class="v">12</div><div class="l">root-cause themes discovered (unsupervised)</div></div>
+  <div class="tile"><div class="v">${Math.round(DATA.triage.routing['0.7'].accuracy*100)}%</div><div class="l">triage accuracy at auto-route threshold</div><div class="d">${Math.round(DATA.triage.routing['0.7'].coverage*100)}% of volume auto-routed</div></div>
+  <div class="tile"><div class="v">1</div><div class="l">active spike alert</div><div class="d down">▲ ${spikeTheme.name.split(' — ')[0]}</div></div>`;
+
+/* ---------- Sentinel: alert ---------- */
+$('#spikeAlert').innerHTML = `<span aria-hidden="true">⚠</span><div><b>Spike detected:</b> “${spikeTheme.name}” rose from ${spike.base_share}% to ${spike.recent_share}% of monthly complaint volume over the last three observed months (${spike.z}σ above baseline). In production, Sentinel opens a case with the payments-disputes team and attaches the ${spikeTheme.count.toLocaleString()} member narratives.</div>`;
+
+/* ---------- Sentinel: trend chart ---------- */
+(function(){
+  const S = DATA.sentinel, months = S.months;
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const hl = [ {id: spike.id, slot:'--s1'}, {id: 2, slot:'--s2'}, {id: 11, slot:'--s3'} ];
+  const W=960, H=300, P={l:40,r:150,t:12,b:26};
+  const maxY = Math.ceil(Math.max(...Object.values(S.trend).flat())/5)*5;
+  const x = i => P.l + i*(W-P.l-P.r)/(months.length-1);
+  const y = v => P.t + (H-P.t-P.b)*(1-v/maxY);
+  let g = '';
+  for(let v=0; v<=maxY; v+=5) g += `<line x1="${P.l}" y1="${y(v)}" x2="${W-P.r}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${P.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-variant-numeric="tabular-nums">${v}%</text>`;
+  months.forEach((m,i)=>{ if(i%3===0||i===months.length-1) g += `<text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">${m.slice(2).replace('-','/')}</text>`;});
+  const path = id => S.trend[id].map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  let lines='', labels='';
+  Object.keys(S.trend).forEach(id=>{ if(!hl.some(h=>h.id==id)) lines += `<path d="${path(id)}" fill="none" stroke="var(--axis)" stroke-width="1" opacity="0.7"/>`;});
+  hl.forEach(h=>{
+    const t = S.themes.find(t=>t.id===h.id), last = S.trend[h.id][months.length-1];
+    lines += `<path d="${path(h.id)}" fill="none" stroke="var(${h.slot})" stroke-width="2" stroke-linejoin="round"/>`;
+    const short = {1:'Merchant disputes', 2:'360 Savings', 11:'Card servicing'}[h.id] || t.name.split(' ')[0];
+    labels += `<text x="${W-P.r+8}" y="${y(last)+4}" font-size="12" font-weight="600" fill="var(--ink2)"><tspan fill="var(${h.slot})">●</tspan> ${short}</text>`;
+  });
+  const crossline = `<line id="cross" x1="0" y1="${P.t}" x2="0" y2="${H-P.b}" stroke="var(--axis)" stroke-width="1" opacity="0"/>`;
+  $('#trendChart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Theme share of monthly complaint volume, January 2025 to March 2026" style="width:100%;height:auto">${g}${lines}${labels}${crossline}<rect id="hoverzone" x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="transparent"/></svg>`;
+  $('#trendLegend').innerHTML = hl.map(h=>{const t=S.themes.find(t=>t.id===h.id);return `<span><i class="sw" style="background:var(${h.slot})"></i>${t.name}</span>`;}).join('') + `<span><i class="sw" style="background:var(--axis)"></i>9 other themes</span>`;
+  // hover crosshair + tooltip
+  const svg = $('#trendChart svg'), tip = $('#tip');
+  svg.addEventListener('mousemove', e=>{
+    const r = svg.getBoundingClientRect(), sx = W/r.width;
+    const px = (e.clientX-r.left)*sx;
+    const i = Math.max(0, Math.min(months.length-1, Math.round((px-P.l)/((W-P.l-P.r)/(months.length-1)))));
+    $('#cross').setAttribute('x1',x(i)); $('#cross').setAttribute('x2',x(i)); $('#cross').setAttribute('opacity','1');
+    tip.innerHTML = `<b>${months[i]}</b><br>` + hl.map(h=>{const t=S.themes.find(t=>t.id===h.id);return `${t.name.split(' — ')[0]}: ${S.trend[h.id][i]}%`;}).join('<br>');
+    tip.style.left = (e.clientX+14)+'px'; tip.style.top = (e.clientY+14)+'px'; tip.style.opacity = 1;
+  });
+  svg.addEventListener('mouseleave', ()=>{ tip.style.opacity=0; $('#cross').setAttribute('opacity','0'); });
+  // table view
+  let tb = '<table><thead><tr><th>Month</th>'+hl.map(h=>`<th>${S.themes.find(t=>t.id===h.id).name.split(' — ')[0]}</th>`).join('')+'</tr></thead><tbody>';
+  months.forEach((m,i)=>{ tb += `<tr><td>${m}</td>${hl.map(h=>`<td>${S.trend[h.id][i]}%</td>`).join('')}</tr>`;});
+  $('#trendTable').innerHTML = tb + '</tbody></table>';
+})();
+
+/* ---------- Sentinel: theme cards ---------- */
+$('#themeCards').innerHTML = DATA.sentinel.themes.slice().sort((a,b)=>b.count-a.count).map(t=>`
+  <div class="theme"><b>${t.name}</b> <span class="n">· ${t.count.toLocaleString()} narratives · mostly “${t.top_issue}”</span>
+    <div class="terms">${t.top_terms.slice(0,6).join(' · ')}</div>
+    <details><summary>Representative narrative</summary><div class="narr" style="margin-top:6px">${esc(t.rep)}…</div></details>
+  </div>`).join('');
+
+/* ---------- Triage ---------- */
+(function(){
+  const T = DATA.triage;
+  $('#triageTiles').innerHTML = `
+    <div class="tile"><div class="v">${Math.round(T.accuracy*100)}%</div><div class="l">overall held-out accuracy</div></div>
+    <div class="tile"><div class="v">${T.macro_f1}</div><div class="l">macro F1 across 5 lanes</div></div>
+    <div class="tile"><div class="v">${Math.round(T.routing['0.7'].accuracy*100)}%</div><div class="l">accuracy when confidence ≥ 0.7</div><div class="d">${Math.round(T.routing['0.7'].coverage*100)}% coverage — rest to human queue</div></div>`;
+  // F1 bars — single series, slot 1
+  const lanes = T.labels, W=460, BH=30, P={l:170,r:44,t:6,b:4}, H=P.t+P.b+lanes.length*(BH+8);
+  let s = '';
+  lanes.forEach((l,i)=>{
+    const f1 = T.per_lane[l].f1, w = (W-P.l-P.r)*f1, yy = P.t+i*(BH+8);
+    s += `<text x="${P.l-8}" y="${yy+BH/2+4}" text-anchor="end" font-size="12" fill="var(--ink2)">${l.split(' — ')[0]}</text>
+          <rect x="${P.l}" y="${yy}" width="${w.toFixed(1)}" height="${BH}" rx="4" fill="var(--s1)"><title>${l}: F1 ${f1} (support ${T.per_lane[l].support})</title></rect>
+          <text x="${P.l+w+6}" y="${yy+BH/2+4}" font-size="12" fill="var(--ink2)" font-variant-numeric="tabular-nums">${f1.toFixed(2)}</text>`;
+  });
+  $('#f1Chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="F1 score by regulatory lane" style="width:100%;height:auto">${s}</svg>`;
+  // Confusion matrix — sequential blue, counts visible
+  const cm = T.confusion, n = lanes.length, C=54, PL=118, PT=64, WW=PL+n*C+10, HH=PT+n*C+8;
+  const mx = Math.max(...cm.flat());
+  const ramp = ['#cde2fb','#9ec5f4','#6da7ec','#3987e5','#256abf','#1c5cab','#0d366b'];
+  const col = v => v===0 ? 'var(--page)' : ramp[Math.min(ramp.length-1, Math.floor((v/mx)**0.5*ramp.length))];
+  let c = '';
+  lanes.forEach((l,j)=>{ c += `<text x="${PL+j*C+C/2}" y="${PT-40}" font-size="10.5" fill="var(--muted)" text-anchor="middle" transform="rotate(-35 ${PL+j*C+C/2} ${PT-40})">${l.split(' — ')[0]}</text>`;});
+  lanes.forEach((l,i)=>{
+    c += `<text x="${PL-8}" y="${PT+i*C+C/2+4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${l.split(' — ')[0]}</text>`;
+    lanes.forEach((_,j)=>{
+      const v = cm[i][j], ink = (v/mx)**0.5 > 0.45 ? '#fff' : 'var(--ink2)';
+      c += `<rect x="${PL+j*C+1}" y="${PT+i*C+1}" width="${C-2}" height="${C-2}" rx="4" fill="${col(v)}"><title>true ${lanes[i]} → predicted ${lanes[j]}: ${v}</title></rect>
+            <text x="${PL+j*C+C/2}" y="${PT+i*C+C/2+4}" text-anchor="middle" font-size="11" fill="${ink}" font-variant-numeric="tabular-nums">${v}</text>`;
+    });
+  });
+  $('#cmChart').innerHTML = `<svg viewBox="0 0 ${WW} ${HH}" role="img" aria-label="Confusion matrix, rows true lane, columns predicted lane" style="width:100%;height:auto">${c}<text x="${PL-8}" y="${PT-46}" text-anchor="end" font-size="10.5" fill="var(--muted)">true ↓ / pred →</text></svg>`;
+  // table view
+  let tb = '<table><thead><tr><th>Lane</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead><tbody>';
+  lanes.forEach(l=>{const p=T.per_lane[l]; tb += `<tr><td>${l}</td><td>${p.precision}</td><td>${p.recall}</td><td>${p.f1}</td><td>${p.support}</td></tr>`;});
+  $('#triageTable').innerHTML = tb+'</tbody></table>';
+  $('#routing').innerHTML = `<b>Routing policy:</b> confidence ≥ 0.8 → auto-route (${Math.round(T.routing['0.8'].coverage*100)}% of volume at ${Math.round(T.routing['0.8'].accuracy*100)}% accuracy) · 0.5–0.8 → routed with review flag · &lt; 0.5 → human triage queue. The FCRA↔FDCPA confusion visible in the matrix is expected — debt-collection complaints frequently allege credit-reporting harm; in production these route to a shared intake with dual-lane tagging.`;
+  $('#triageExamples').innerHTML = DATA.triage_ex.slice(0,8).map(e=>`
+    <div class="exam"><span class="lane">${e.lane}</span> <span class="n" style="color:var(--muted)">· confidence ${e.conf}</span>
+    <div class="confbar" aria-hidden="true"><i style="width:${e.conf*100}%"></i></div>
+    <div class="narr" style="margin-top:8px">${esc(e.text)}</div></div>`).join('');
+})();
+
+/* ---------- Copilot ---------- */
+(function(){
+  const cases = DATA.copilot.cases;
+  $('#caseBtns').innerHTML = cases.map((c,i)=>`<button data-i="${i}" class="${i?'':'on'}">${c.case_id}</button>`).join('');
+  function render(i){
+    const c = cases[i];
+    const letter = esc(c.letter).replace(/\[E(\d+): ([^\]]+)\]/g,'<span class="chip cite">E$1 · $2</span>');
+    $('#caseView').innerHTML = `
+      <div class="grid2">
+        <div>
+          <h2 style="font-size:14px">1 · Case file — customer narrative <span class="n" style="color:var(--muted);font-weight:400">(${c.state||'—'}, ${c.date})</span></h2>
+          <div class="narr" style="margin-top:8px">${esc(c.narrative)}</div>
+        </div>
+        <div>
+          <h2 style="font-size:14px">2 · Evidence inventory (extracted)</h2>
+          <div style="margin:8px 0 14px">${c.inventory.map((e,j)=>`<span class="chip">E${j+1} · ${e}</span>`).join('')}${c.amounts.length?`<span class="chip">Disputed: $${c.amounts[0]}</span>`:''}</div>
+          <h2 style="font-size:14px">3 · Drafted response letter</h2>
+          <div class="letter" style="margin-top:8px">${letter}</div>
+          <div style="margin-top:10px" class="vok">✓ Citation validator: ${c.validator.citations}/${c.validator.citations} citations resolve to inventoried evidence — cleared for investigator review</div>
+        </div>
+      </div>`;
+  }
+  $('#caseBtns').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#caseBtns button').forEach(x=>x.classList.toggle('on',x===b));
+    render(+b.dataset.i);
+  });
+  render(0);
+  const bad = DATA.copilot.bad_case;
+  const badLetter = esc(bad.letter).replace(/\[E9: ([^\]]+)\]/g,'<span class="chip cite" style="background:color-mix(in srgb,var(--crit) 14%,var(--surface));border-color:var(--crit)">E9 · $1</span>').replace(/\[E(\d): ([^\]]+)\]/g,'<span class="chip cite">E$1 · $2</span>');
+  $('#badCase').innerHTML = `<div class="letter">${badLetter}</div>
+    <div style="margin-top:10px" class="vbad">✕ BLOCKED — citation E9 (“Merchant response letter”) does not resolve to any inventoried evidence. Draft returned to generation; incident logged. This is the zero-tolerance gate: deterministic, not model-dependent.</div>`;
+})();
+</script>
+</body>
+</html>
