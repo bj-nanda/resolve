@@ -80,7 +80,7 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
 <header>
   <div class="badge">Working prototype · built on public CFPB data</div>
   <h1>Resolve — Dispute Intelligence for Capital One</h1>
-  <div class="sub">Three agents over the dispute lifecycle, demonstrated on 21,192 real Capital One complaint narratives (Jan 2025 – Jun 2026). Concept &amp; build: Bharathwaj Nandagopal.</div>
+  <div class="sub" id="subline">Three agents over the dispute lifecycle, on real Capital One complaint narratives from the CFPB. Concept &amp; build: Bharathwaj Nandagopal.</div>
 </header>
 
 <div class="tiles" id="tiles"></div>
@@ -165,22 +165,34 @@ $('#nav').addEventListener('click', e=>{
 });
 
 /* ---------- header tiles ---------- */
-const spike = DATA.sentinel.spikes[0];
-const spikeTheme = DATA.sentinel.themes.find(t=>t.id===spike.id);
+const spike = DATA.sentinel.spikes[0] || null;
+const spikeTheme = spike ? DATA.sentinel.themes.find(t=>t.id===spike.id) : null;
+const C = DATA.counts || {};
+const nf = n => (n==null ? '—' : Number(n).toLocaleString());
+// Fill the header subtitle with the live analyzed count and the all-time total for scale.
+(function(){ const sl = document.getElementById('subline'); if(!sl) return;
+  const a = nf(C.analyzed), tot = C.all_time_total ? ` — of ${nf(C.all_time_total)} on record` : '';
+  sl.textContent = `Three agents over the dispute lifecycle, demonstrated on ${a} real Capital One complaint narratives since Jan 2025${tot}. Concept & build: Bharathwaj Nandagopal.`; })();
 $('#tiles').innerHTML = `
-  <div class="tile"><div class="v">21,192</div><div class="l">real complaint narratives analyzed</div></div>
+  <div class="tile"><div class="v">${nf(C.analyzed)}</div><div class="l">narratives analyzed (since Jan 2025)</div>${C.all_time_total?`<div class="d">of ${nf(C.all_time_total)} all-time on record</div>`:''}</div>
   <div class="tile"><div class="v">12</div><div class="l">root-cause themes discovered (unsupervised)</div></div>
   <div class="tile"><div class="v">${Math.round(DATA.triage.routing['0.7'].accuracy*100)}%</div><div class="l">triage accuracy at auto-route threshold</div><div class="d">${Math.round(DATA.triage.routing['0.7'].coverage*100)}% of volume auto-routed</div></div>
-  <div class="tile"><div class="v">1</div><div class="l">active spike alert</div><div class="d down">▲ ${spikeTheme.name.split(' — ')[0]}</div></div>`;
+  ${spike
+    ? `<div class="tile"><div class="v">1</div><div class="l">active spike alert (&gt;2σ)</div><div class="d down">▲ ${spikeTheme.name.split(' — ')[0]}</div></div>`
+    : `<div class="tile"><div class="v">0</div><div class="l">active spike alerts (&gt;2σ)</div><div class="d">all themes within normal range</div></div>`}`;
 
 /* ---------- Sentinel: alert ---------- */
-$('#spikeAlert').innerHTML = `<span aria-hidden="true">⚠</span><div><b>Spike detected:</b> “${spikeTheme.name}” rose from ${spike.base_share}% to ${spike.recent_share}% of monthly complaint volume over the last three observed months (${spike.z}σ above baseline). In production, Sentinel opens a case with the payments-disputes team and attaches the ${spikeTheme.count.toLocaleString()} member narratives.</div>`;
+$('#spikeAlert').innerHTML = spike
+  ? `<span aria-hidden="true">⚠</span><div><b>Spike detected:</b> “${spikeTheme.name}” rose from ${spike.base_share}% to ${spike.recent_share}% of monthly complaint volume over the last three observed months (${spike.z}σ above baseline — past the 2σ significance threshold). In production, Sentinel opens a case with the payments-disputes team and attaches the ${spikeTheme.count.toLocaleString()} member narratives.</div>`
+  : `<span aria-hidden="true">✓</span><div><b>No active spike this cycle:</b> no root-cause theme is currently more than 2σ above its historical baseline. Sentinel monitors all 12 themes every night and raises a case only when one crosses the 2σ significance threshold.</div>`;
+if (!spike) $('#spikeAlert').style.borderLeftColor = 'var(--good, #0ca30c)';
 
 /* ---------- Sentinel: trend chart ---------- */
 (function(){
   const S = DATA.sentinel, months = S.months;
   const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const hl = [ {id: spike.id, slot:'--s1'}, {id: 2, slot:'--s2'}, {id: 11, slot:'--s3'} ];
+  const primaryId = spike ? spike.id : 1;
+  const hl = [ {id: primaryId, slot:'--s1'}, {id: 2, slot:'--s2'}, {id: 11, slot:'--s3'} ];
   const W=960, H=300, P={l:40,r:150,t:12,b:26};
   const maxY = Math.ceil(Math.max(...Object.values(S.trend).flat())/5)*5;
   const x = i => P.l + i*(W-P.l-P.r)/(months.length-1);

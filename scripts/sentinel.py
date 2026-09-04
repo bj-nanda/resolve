@@ -58,7 +58,7 @@ for k in range(K):
     v = np.array(trend[k]); base, recent = v[:-3], v[-3:]
     if base.std() > 0:
         z = (recent.mean() - base.mean())/base.std()
-        if z > 1.0: spikes.append({'id': k, 'z': round(float(z),2),
+        if z > 2.0: spikes.append({'id': k, 'z': round(float(z),2),
                                    'base_share': round(float(base.mean()),2), 'recent_share': round(float(recent.mean()),2)})
 spikes.sort(key=lambda s: -s['z'])
 print('\nSpikes (recent 3-mo vs baseline):', spikes)

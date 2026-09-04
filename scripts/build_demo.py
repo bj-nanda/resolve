@@ -25,6 +25,11 @@ for t in sentinel['themes']:
 
 data = {'triage': triage, 'triage_ex': triage_ex, 'sentinel': sentinel, 'copilot': copilot}
 import os, datetime
+# Live corpus counts (from fetch_data.py); fall back gracefully if absent.
+try:
+    data['counts'] = json.load(open('counts.json'))
+except Exception:
+    data['counts'] = {'analyzed': None, 'all_time_total': None}
 tpl = open(os.path.join(os.path.dirname(__file__), 'template.html')).read()
 data['built'] = datetime.date.today().isoformat()
 html = tpl.replace('__DATA__', json.dumps(data))
