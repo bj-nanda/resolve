@@ -94,6 +94,11 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
 <section id="sentinel">
   <div class="alert" id="spikeAlert"></div>
   <div class="card">
+    <h2>Alert history</h2>
+    <div class="note">Every spike Sentinel has flagged since go-live, logged permanently by the nightly build. Alerts decay by design — a surge becomes part of its own baseline over time and eventually drops back under 2σ — so this log keeps past detections visible after the live alert clears.</div>
+    <div style="overflow-x:auto" id="alertHistory"></div>
+  </div>
+  <div class="card">
     <h2>Complaint-theme share over time</h2>
     <div class="note">Each narrative assigned to its dominant root-cause theme (NMF topic model, k=12). Lines show each theme's share of monthly complaint volume — share, not raw count, to be robust to CFPB publication lag. Highlighted: the active spike and two strategically notable themes.</div>
     <div id="trendChart"></div>
@@ -186,6 +191,22 @@ $('#spikeAlert').innerHTML = spike
   ? `<span aria-hidden="true">⚠</span><div><b>Spike detected:</b> “${spikeTheme.name}” rose from ${spike.base_share}% to ${spike.recent_share}% of monthly complaint volume over the last three observed months (${spike.z}σ above baseline — past the 2σ significance threshold). In production, Sentinel opens a case with the payments-disputes team and attaches the ${spikeTheme.count.toLocaleString()} member narratives.</div>`
   : `<span aria-hidden="true">✓</span><div><b>No active spike this cycle:</b> no root-cause theme is currently more than 2σ above its historical baseline. Sentinel monitors all 12 themes every night and raises a case only when one crosses the 2σ significance threshold.</div>`;
 if (!spike) $('#spikeAlert').style.borderLeftColor = 'var(--good, #0ca30c)';
+
+/* ---------- Sentinel: alert history ---------- */
+(function(){
+  const H = DATA.alert_history || [];
+  const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+  if (!H.length) { $('#alertHistory').innerHTML = '<div class="note">No spikes flagged yet.</div>'; return; }
+  $('#alertHistory').innerHTML = `<table>
+    <thead><tr><th>Theme</th><th style="white-space:nowrap">First flagged</th><th>Peak</th><th>Latest reading</th><th>Status</th></tr></thead>
+    <tbody>${H.map(h => `<tr>
+      <td><b>${esc(h.theme)}</b><div class="n" style="color:var(--muted);font-size:11.5px">${(h.top_terms||[]).slice(0,4).join(' · ')}</div></td>
+      <td style="white-space:nowrap">${fmt(h.first_seen)}</td>
+      <td><b>${h.peak_z}σ</b><div style="color:var(--muted);font-size:11.5px">${h.peak_base_share}% → ${h.peak_recent_share}% share (${h.peak_window})</div></td>
+      <td>${h.latest_z}σ<div style="color:var(--muted);font-size:11.5px">${h.latest_base_share}% → ${h.latest_recent_share}% (${h.latest_window}), as of ${fmt(h.last_seen)}</div></td>
+      <td>${h.status === 'active' ? '<span class="up">● Active</span>' : `<span style="color:var(--muted)">○ Cleared ${fmt(h.cleared_on)}</span>`}</td>
+    </tr>`).join('')}</tbody></table>`;
+})();
 
 /* ---------- Sentinel: trend chart ---------- */
 (function(){

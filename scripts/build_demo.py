@@ -30,6 +30,41 @@ try:
     data['counts'] = json.load(open('counts.json'))
 except Exception:
     data['counts'] = {'analyzed': None, 'all_time_total': None}
+# --- Alert history: a permanent log of every spike Sentinel has flagged ---
+# Spikes decay by design (a surge eventually becomes part of the baseline), so the
+# history keeps past detections visible after the live alert clears. Never edited
+# by hand: entries are appended/updated by this nightly build only.
+HIST = 'alert_history.json'
+today = datetime.date.today().isoformat()
+try:
+    history = json.load(open(HIST))
+except Exception:
+    history = []
+months = sentinel['months']
+window = f"{months[-3]} – {months[-1]}" if len(months) >= 3 else '—'
+active_names = set()
+for sp in sentinel['spikes']:
+    th = next(t for t in sentinel['themes'] if t['id'] == sp['id'])
+    active_names.add(th['name'])
+    e = next((h for h in history if h['theme'] == th['name'] and h['status'] == 'active'), None)
+    if e is None:
+        e = {'theme': th['name'], 'first_seen': today, 'peak_z': sp['z'], 'peak_seen': today,
+             'peak_window': window, 'peak_base_share': sp['base_share'], 'peak_recent_share': sp['recent_share'],
+             'status': 'active'}
+        history.append(e)
+    if sp['z'] > e['peak_z']:
+        e.update(peak_z=sp['z'], peak_seen=today, peak_window=window,
+                 peak_base_share=sp['base_share'], peak_recent_share=sp['recent_share'])
+    e.update(last_seen=today, latest_z=sp['z'], latest_window=window,
+             latest_base_share=sp['base_share'], latest_recent_share=sp['recent_share'],
+             top_terms=th['top_terms'][:6], top_issue=th['top_issue'])
+for e in history:
+    if e['status'] == 'active' and e['theme'] not in active_names:
+        e['status'] = 'cleared'; e['cleared_on'] = today   # fell back under 2σ
+history.sort(key=lambda h: h['first_seen'], reverse=True)
+json.dump(history, open(HIST, 'w'), indent=1)
+data['alert_history'] = history
+
 tpl = open(os.path.join(os.path.dirname(__file__), 'template.html')).read()
 data['built'] = datetime.date.today().isoformat()
 html = tpl.replace('__DATA__', json.dumps(data))
